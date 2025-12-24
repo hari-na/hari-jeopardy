@@ -8,7 +8,7 @@ let hostConnection: DataConnection | null = null;
 let currentRoomCode = '';
 let currentPlayerId = '';
 
-const PEER_PREFIX = 'HARI-JEOPARDY-';
+export const PEER_PREFIX = 'HARI-JEOPARDY-';
 
 const PEER_CONFIG = {
   config: {
@@ -125,7 +125,8 @@ export const initPlayer = (
   const attemptConnection = (): Promise<Player> => {
     return new Promise((resolve, reject) => {
       attempt++;
-      console.log(`Connection attempt ${attempt} for room ${roomCode}...`);
+      let failed = false;
+      console.log(`[Attempt ${attempt}] Initializing for room ${roomCode}...`);
       if (onAttempt) onAttempt(attempt);
 
       if (peer && !peer.destroyed) {
@@ -141,18 +142,33 @@ export const initPlayer = (
         if (connectionTimeout) clearTimeout(connectionTimeout);
       };
 
+      const handleFailure = (err: any) => {
+        if (failed) return;
+        failed = true;
+        cleanup();
+
+        const errorType = err?.type || err?.message || 'unknown';
+        console.warn(`[Attempt ${attempt}] Failed: ${errorType}`);
+
+        if (attempt < maxRetries) {
+          console.log(`[Attempt ${attempt}] Retrying in 2 seconds...`);
+          setTimeout(() => {
+            attemptConnection().then(resolve).catch(reject);
+          }, 2000);
+        } else {
+          reject(err);
+        }
+      };
+
       // Start the global timeout for this specific attempt immediately
       connectionTimeout = setTimeout(() => {
-        console.warn('Connection attempt timed out (global)');
-        cleanup();
-        if (peer && !peer.destroyed) {
-          peer.destroy();
-        }
         handleFailure(new Error('Connection timed out'));
       }, 10000); // 10 second total timeout per attempt
 
-      peer.on('open', () => {
-        console.log('Player Peer opened, connecting to host...');
+      peer.on('open', (id) => {
+        console.log(`[Attempt ${attempt}] Peer opened with ID: ${id}`);
+        console.log(`[Attempt ${attempt}] Connecting to host: ${PEER_PREFIX}${roomCode}`);
+
         const conn = peer!.connect(`${PEER_PREFIX}${roomCode}`, {
           reliable: true
         });
@@ -160,7 +176,7 @@ export const initPlayer = (
 
         conn.on('open', () => {
           cleanup();
-          console.log('Connected to host');
+          console.log(`[Attempt ${attempt}] Data channel open!`);
           const joinMsg: SyncMessage = {
             type: 'PLAYER_JOIN',
             payload: {
@@ -186,35 +202,17 @@ export const initPlayer = (
         });
 
         conn.on('error', (err) => {
-          cleanup();
-          console.error('Connection error:', err);
           handleFailure(err);
         });
 
         conn.on('close', () => {
-          cleanup();
-          console.warn('Host connection closed');
+          handleFailure(new Error('Connection closed by host'));
         });
       });
 
       peer.on('error', (err) => {
-        cleanup();
-        console.error('Peer error:', err);
         handleFailure(err);
       });
-
-      const handleFailure = (err: any) => {
-        const errorType = err?.type || 'unknown';
-        if (attempt < maxRetries) {
-          console.log(`Attempt ${attempt} failed (${errorType}), retrying in 2s...`);
-          setTimeout(() => {
-            attemptConnection().then(resolve).catch(reject);
-          }, 2000);
-        } else {
-          // Attach type to error if it's a string, or just pass it
-          reject(err);
-        }
-      };
     });
   };
 

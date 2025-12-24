@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { GameState, Question, Player, SyncMessage } from '../types';
-import { initHost, broadcastState, destroyPeer, generateRoomCode, sendToPeer } from '../services/gameSync';
+import { initHost, broadcastState, destroyPeer, generateRoomCode, sendToPeer, PEER_PREFIX } from '../services/gameSync';
 import { generateJeopardyBoard } from '../services/geminiService';
 import { loadMedicalBoard } from '../services/staticGameService';
 import { audioService } from '../services/audioService';
@@ -566,16 +566,35 @@ const HostView: React.FC<HostViewProps> = ({ roomCode, theme }) => {
             <h2 className="font-game text-4xl neon-text text-blue-500 tracking-tighter">HARI JEOPARDY</h2>
             <p className="text-slate-400 text-sm uppercase font-bold tracking-widest">{gameState.theme}</p>
           </div>
-          <div className="flex items-center gap-2 bg-slate-900/50 backdrop-blur px-3 py-1 rounded-full border border-slate-700 mt-2">
-            <div className={`w-2 h-2 rounded-full ${peerStatus === 'CONNECTED' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]' : peerStatus === 'CONNECTING' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`} />
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-              {peerStatus === 'CONNECTED' ? 'Live' : peerStatus === 'CONNECTING' ? 'Connecting...' : 'Offline'}
-            </span>
+          <div className="flex flex-col gap-1 mt-2">
+            <div className="flex items-center gap-2 bg-slate-900/50 backdrop-blur px-3 py-1 rounded-full border border-slate-700">
+              <div className={`w-2 h-2 rounded-full ${peerStatus === 'CONNECTED' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]' : peerStatus === 'CONNECTING' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`} />
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                {peerStatus === 'CONNECTED' ? 'Live' : peerStatus === 'CONNECTING' ? 'Connecting...' : 'Offline'}
+              </span>
+            </div>
+            {peerStatus === 'CONNECTED' && (
+              <span className="text-[8px] text-slate-600 font-mono ml-2 uppercase">ID: {PEER_PREFIX}{currentRoomCode}</span>
+            )}
           </div>
         </div>
-        <div className="bg-slate-900 border-2 border-slate-700 px-6 py-4 rounded-2xl text-center">
-          <p className="text-xs text-slate-400 font-bold uppercase mb-1">Room Code</p>
-          <p className="font-game text-4xl tracking-widest text-white">{currentRoomCode}</p>
+        <div className="flex gap-4 items-center">
+          {gameState.isHostControllerConnected && (
+            <button
+              onClick={() => {
+                hostControllerPeerIdRef.current = null;
+                updateAndBroadcast({ isHostControllerConnected: false });
+              }}
+              className="bg-red-900/20 hover:bg-red-900/40 border border-red-500/50 text-red-500 px-3 py-2 rounded-xl text-[10px] font-bold uppercase transition-all active:scale-95"
+              title="Force clear the host controller slot"
+            >
+              Reset Controller
+            </button>
+          )}
+          <div className="bg-slate-900 border-2 border-slate-700 px-6 py-4 rounded-2xl text-center">
+            <p className="text-xs text-slate-400 font-bold uppercase mb-1">Room Code</p>
+            <p className="font-game text-4xl tracking-widest text-white">{currentRoomCode}</p>
+          </div>
         </div>
       </div>
 
