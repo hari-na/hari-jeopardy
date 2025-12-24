@@ -31,12 +31,11 @@ const HostControllerView: React.FC<HostControllerViewProps> = ({ roomCode }) => 
       try {
         setConnecting(true);
         setError(null);
-        // We join as a "player" but with a special name that the host handles
-        // HostView logic already handles adding us to players list, but we won't show up as a regular player if we want
         await initPlayer(roomCode, 'HOST_CONTROLLER', handleMessage, (a) => setAttempt(a));
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        setError('Failed to connect as Host Controller after multiple attempts.');
+        const type = err?.type || 'unknown';
+        setError(`Failed to connect as Host Controller (${type}).`);
       } finally {
         setConnecting(false);
       }
@@ -58,8 +57,16 @@ const HostControllerView: React.FC<HostControllerViewProps> = ({ roomCode }) => 
   if (error) {
     return (
       <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6 text-center">
-        <p className="text-red-400 mb-4">{error}</p>
-        <button onClick={() => window.location.reload()} className="bg-slate-800 px-6 py-2 rounded-xl">Retry</button>
+        <div className="bg-blue-900/10 border-2 border-blue-500/50 p-8 rounded-3xl max-w-sm">
+          <p className="text-blue-400 font-bold mb-4 uppercase tracking-widest">Host Connection Error</p>
+          <p className="text-sm text-slate-400 mb-8">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-slate-800 hover:bg-slate-700 px-6 py-4 rounded-xl border border-slate-700 font-bold transition-all active:scale-95"
+          >
+            RETRY CONNECTION
+          </button>
+        </div>
       </div>
     );
   }

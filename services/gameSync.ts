@@ -16,6 +16,8 @@ const PEER_CONFIG = {
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
       { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
     ],
     iceCandidatePoolSize: 10,
   }
@@ -139,19 +141,22 @@ export const initPlayer = (
         if (connectionTimeout) clearTimeout(connectionTimeout);
       };
 
+      // Start the global timeout for this specific attempt immediately
+      connectionTimeout = setTimeout(() => {
+        console.warn('Connection attempt timed out (global)');
+        cleanup();
+        if (peer && !peer.destroyed) {
+          peer.destroy();
+        }
+        handleFailure(new Error('Connection timed out'));
+      }, 10000); // 10 second total timeout per attempt
+
       peer.on('open', () => {
-        console.log('Player Peer opened');
+        console.log('Player Peer opened, connecting to host...');
         const conn = peer!.connect(`${PEER_PREFIX}${roomCode}`, {
           reliable: true
         });
         hostConnection = conn;
-
-        connectionTimeout = setTimeout(() => {
-          console.warn('Connection handshake timeout');
-          conn.close();
-          peer?.destroy();
-          handleFailure(new Error('Handshake timeout'));
-        }, 8000); // 8 second timeout for handshake
 
         conn.on('open', () => {
           cleanup();
@@ -199,12 +204,14 @@ export const initPlayer = (
       });
 
       const handleFailure = (err: any) => {
+        const errorType = err?.type || 'unknown';
         if (attempt < maxRetries) {
-          console.log(`Attempt ${attempt} failed, retrying in 2s...`);
+          console.log(`Attempt ${attempt} failed (${errorType}), retrying in 2s...`);
           setTimeout(() => {
             attemptConnection().then(resolve).catch(reject);
           }, 2000);
         } else {
+          // Attach type to error if it's a string, or just pass it
           reject(err);
         }
       };

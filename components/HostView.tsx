@@ -16,6 +16,7 @@ const HostView: React.FC<HostViewProps> = ({ roomCode, theme }) => {
   const [currentRoomCode, setCurrentRoomCode] = useState(roomCode);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [peerStatus, setPeerStatus] = useState<'CONNECTING' | 'CONNECTED' | 'ERROR'>('CONNECTING');
   const [error, setError] = useState<string | null>(null);
   const [introPlayerIndex, setIntroPlayerIndex] = useState(-1);
   const hostControllerPeerIdRef = useRef<string | null>(null);
@@ -295,9 +296,11 @@ const HostView: React.FC<HostViewProps> = ({ roomCode, theme }) => {
         }
       });
 
+      setPeerStatus('CONNECTED');
       setGameState(newState);
     } catch (err: any) {
       console.error(err);
+      setPeerStatus('ERROR');
       setError(err?.message || "Failed to initialize game. Please try again.");
     } finally {
       setLoading(false);
@@ -558,9 +561,17 @@ const HostView: React.FC<HostViewProps> = ({ roomCode, theme }) => {
       </div>
       {/* Header */}
       <div className="flex justify-between items-center mb-6 z-10 relative">
-        <div>
-          <h2 className="font-game text-4xl neon-text text-blue-500 tracking-tighter">HARI JEOPARDY</h2>
-          <p className="text-slate-400 text-sm uppercase font-bold tracking-widest">{gameState.theme}</p>
+        <div className="flex items-start gap-4">
+          <div>
+            <h2 className="font-game text-4xl neon-text text-blue-500 tracking-tighter">HARI JEOPARDY</h2>
+            <p className="text-slate-400 text-sm uppercase font-bold tracking-widest">{gameState.theme}</p>
+          </div>
+          <div className="flex items-center gap-2 bg-slate-900/50 backdrop-blur px-3 py-1 rounded-full border border-slate-700 mt-2">
+            <div className={`w-2 h-2 rounded-full ${peerStatus === 'CONNECTED' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]' : peerStatus === 'CONNECTING' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`} />
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+              {peerStatus === 'CONNECTED' ? 'Live' : peerStatus === 'CONNECTING' ? 'Connecting...' : 'Offline'}
+            </span>
+          </div>
         </div>
         <div className="bg-slate-900 border-2 border-slate-700 px-6 py-4 rounded-2xl text-center">
           <p className="text-xs text-slate-400 font-bold uppercase mb-1">Room Code</p>

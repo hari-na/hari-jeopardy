@@ -28,9 +28,10 @@ const PlayerView: React.FC<PlayerViewProps> = ({ roomCode, playerName }) => {
         setError(null);
         const player = await initPlayer(roomCode, playerName, handleMessage, (a) => setAttempt(a));
         setLocalPlayerId(player.id);
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        setError('Failed to connect after multiple attempts. Is the host active and online?');
+        const type = err?.type || 'unknown';
+        setError(`Failed after multiple attempts (${type}). Is the host active and online?`);
       } finally {
         setConnecting(false);
       }
@@ -96,15 +97,34 @@ const PlayerView: React.FC<PlayerViewProps> = ({ roomCode, playerName }) => {
   }
 
   if (error) {
+    const isPeerUnavailable = error.includes('peer-unavailable');
+    const isNetworkError = error.includes('network') || error.includes('Handshake');
+
     return (
       <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6 text-center">
-        <p className="text-red-400 mb-4">{error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="bg-slate-800 px-6 py-2 rounded-xl font-bold"
-        >
-          Try Again
-        </button>
+        <div className="bg-red-950/30 border-2 border-red-500/50 p-8 rounded-3xl max-w-sm">
+          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+          </div>
+          <p className="text-red-400 font-bold mb-2">CONNECTION FAILED</p>
+          <p className="text-sm text-slate-300 mb-6">{error}</p>
+
+          <div className="bg-slate-900/50 p-4 rounded-xl text-left border border-slate-800 mb-6">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Troubleshooting</p>
+            <ul className="text-xs space-y-2 text-slate-400">
+              {isPeerUnavailable && <li>• Verify the Room Code is correct on the big screen.</li>}
+              {isNetworkError && <li>• Your Wi-Fi might be blocking the connection. Try switching to **Mobile Data**.</li>}
+              <li>• Ask the host to refresh their screen and try a new code.</li>
+            </ul>
+          </div>
+
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-slate-800 hover:bg-slate-700 px-6 py-4 rounded-xl font-bold transition-all active:scale-95 border border-slate-700"
+          >
+            TRY AGAIN
+          </button>
+        </div>
       </div>
     );
   }
