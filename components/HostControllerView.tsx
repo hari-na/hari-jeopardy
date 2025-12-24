@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { GameState, SyncMessage } from '../types';
 import { initPlayer, sendAction } from '../services/gameSync';
 
@@ -9,6 +9,12 @@ interface HostControllerViewProps {
 
 const HostControllerView: React.FC<HostControllerViewProps> = ({ roomCode }) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const gameStateRef = useRef<GameState | null>(null);
+
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
   const [connecting, setConnecting] = useState(true);
   const [attempt, setAttempt] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +22,9 @@ const HostControllerView: React.FC<HostControllerViewProps> = ({ roomCode }) => 
   const handleMessage = useCallback((msg: SyncMessage) => {
     if (msg.type === 'UPDATE_STATE') {
       const state = msg.payload as GameState;
-      if (state.isHostControllerConnected && !gameState) {
+      const currentGameState = gameStateRef.current;
+
+      if (state.isHostControllerConnected && !currentGameState) {
         // This might happen if we joined but someone else is already host
         // However, the REJECTED message is more reliable for immediate feedback
       }
@@ -24,7 +32,7 @@ const HostControllerView: React.FC<HostControllerViewProps> = ({ roomCode }) => 
     } else if (msg.type === 'REJECTED') {
       setError(msg.payload || 'Another host controller is already connected to this room.');
     }
-  }, [gameState]);
+  }, []);
 
   useEffect(() => {
     const setup = async () => {
