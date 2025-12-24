@@ -1,0 +1,9 @@
+
+{
+  "name": "Gemini Jeopardy: Jackbox Edition",
+  "description": "A multiplayer Jeopardy-style game where one device acts as the Host (Big Screen) and others join as Players (Controllers) using a room code. Powered by Gemini for dynamic question generation.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

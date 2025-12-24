@@ -1,0 +1,152 @@
+[
+    {
+        "title": "General Medicine",
+        "questions": [
+            {
+                "value": 200,
+                "question": "Also known as 'consumption', this infectious disease is caused by Mycobacterium tuberculosis.",
+                "answer": "Tuberculosis"
+            },
+            {
+                "value": 400,
+                "question": "A 45-year-old male presents with crushing chest pain radiating to the left arm and diaphoresis. ECG shows ST elevation in leads II, III, and aVF.",
+                "answer": "Inferior Wall MI"
+            },
+            {
+                "value": 600,
+                "question": "This metabolic disorder is characterized by hyperglycemia due to insulin resistance or deficiency, often presenting with polyuria, polydipsia, and polyphagia.",
+                "answer": "Diabetes Mellitus"
+            },
+            {
+                "value": 800,
+                "question": "A patient with liver cirrhosis presents with hematemesis. The most likely cause is rupture of these.",
+                "answer": "Esophageal Varices"
+            },
+            {
+                "value": 1000,
+                "question": "In a patient with Dengue fever, the warning signs include abdominal pain, persistent vomiting, and this clinical finding related to capillary leak.",
+                "answer": "Hemoconcentration (or High Hct)"
+            }
+        ]
+    },
+    {
+        "title": "Surgery",
+        "questions": [
+            {
+                "value": 200,
+                "question": "The most common cause of acute abdomen requiring surgical intervention in young adults.",
+                "answer": "Acute Appendicitis"
+            },
+            {
+                "value": 400,
+                "question": "Murphy's sign is classically positive in this condition.",
+                "answer": "Acute Cholecystitis"
+            },
+            {
+                "value": 600,
+                "question": "This triad for intussusception involves abdominal pain, a sausage-shaped mass, and red currant jelly stool.",
+                "answer": "Triad of Intussusception"
+            },
+            {
+                "value": 800,
+                "question": "In trauma, the FAST scan focuses on detecting fluid in the pericardium, perihepatic, perisplenic, and this pelvic space.",
+                "answer": "Pouch of Douglas"
+            },
+            {
+                "value": 1000,
+                "question": "This classification system is widely used to stage burns based on depth.",
+                "answer": "Degrees of Burn"
+            }
+        ]
+    },
+    {
+        "title": "OBG",
+        "questions": [
+            {
+                "value": 200,
+                "question": "The term used for the first fetal movement felt by the mother.",
+                "answer": "Quickening"
+            },
+            {
+                "value": 400,
+                "question": "Hypertension with proteinuria and edema after 20 weeks of gestation.",
+                "answer": "Preeclampsia"
+            },
+            {
+                "value": 600,
+                "question": "The most common cause of postpartum hemorrhage.",
+                "answer": "Uterine Atony"
+            },
+            {
+                "value": 800,
+                "question": "This maneuver is used to resolve shoulder dystocia by hyperflexing the mother's legs to the abdomen.",
+                "answer": "McRoberts Maneuver"
+            },
+            {
+                "value": 1000,
+                "question": "A non-neoplastic ovarian cyst that commonly ruptures, causing acute pelvic pain, often in the luteal phase.",
+                "answer": "Corpus Luteum Cyst"
+            }
+        ]
+    },
+    {
+        "title": "Pediatrics",
+        "questions": [
+            {
+                "value": 200,
+                "question": "The vitamin supplement given at birth to prevent hemorrhagic disease of the newborn.",
+                "answer": "Vitamin K"
+            },
+            {
+                "value": 400,
+                "question": "A 2-year-old child presents with a barking cough and stridor. The most likely diagnosis is.",
+                "answer": "Croup (Laryngotracheobronchitis)"
+            },
+            {
+                "value": 600,
+                "question": "Koplik spots are pathognomonic for this viral exanthem.",
+                "answer": "Measles"
+            },
+            {
+                "value": 800,
+                "question": "The cyanotic heart disease characterized by a boot-shaped heart on X-ray.",
+                "answer": "Tetralogy of Fallot"
+            },
+            {
+                "value": 1000,
+                "question": "In neonates, the Moro reflex typically disappears by this age.",
+                "answer": "3 to 6 months"
+            }
+        ]
+    },
+    {
+        "title": "Pharmacology",
+        "questions": [
+            {
+                "value": 200,
+                "question": "The antidote for Paracetamol (Acetaminophen) poisoning.",
+                "answer": "N-Acetylcysteine"
+            },
+            {
+                "value": 400,
+                "question": "A loop diuretic acting on the thick ascending limb of the loop of Henle.",
+                "answer": "Furosemide"
+            },
+            {
+                "value": 600,
+                "question": "The mechanism of action of Aspirin involves irreversible inhibition of this enzyme.",
+                "answer": "Cyclooxygenase (COX)"
+            },
+            {
+                "value": 800,
+                "question": "This antitubercular drug is known to cause orange-red discoloration of body fluids.",
+                "answer": "Rifampicin"
+            },
+            {
+                "value": 1000,
+                "question": "The selective antidote for benzodiazepine overdose.",
+                "answer": "Flumazenil"
+            }
+        ]
+    }
+]
