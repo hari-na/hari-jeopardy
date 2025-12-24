@@ -10,24 +10,33 @@ interface HostControllerViewProps {
 const HostControllerView: React.FC<HostControllerViewProps> = ({ roomCode }) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [connecting, setConnecting] = useState(true);
+  const [attempt, setAttempt] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
   const handleMessage = useCallback((msg: SyncMessage) => {
     if (msg.type === 'UPDATE_STATE') {
-      setGameState(msg.payload as GameState);
+      const state = msg.payload as GameState;
+      if (state.isHostControllerConnected && !gameState) {
+        // This might happen if we joined but someone else is already host
+        // However, the REJECTED message is more reliable for immediate feedback
+      }
+      setGameState(state);
+    } else if (msg.type === 'REJECTED') {
+      setError(msg.payload || 'Another host controller is already connected to this room.');
     }
-  }, []);
+  }, [gameState]);
 
   useEffect(() => {
     const setup = async () => {
       try {
         setConnecting(true);
+        setError(null);
         // We join as a "player" but with a special name that the host handles
         // HostView logic already handles adding us to players list, but we won't show up as a regular player if we want
-        await initPlayer(roomCode, 'HOST_CONTROLLER', handleMessage);
+        await initPlayer(roomCode, 'HOST_CONTROLLER', handleMessage, (a) => setAttempt(a));
       } catch (err) {
         console.error(err);
-        setError('Failed to connect as Host Controller.');
+        setError('Failed to connect as Host Controller after multiple attempts.');
       } finally {
         setConnecting(false);
       }
@@ -41,6 +50,7 @@ const HostControllerView: React.FC<HostControllerViewProps> = ({ roomCode }) => 
       <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6 text-center">
         <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p className="font-game text-xl text-blue-400">Connecting as Host...</p>
+        <p className="text-slate-500 text-xs mt-2 uppercase tracking-widest font-bold">Attempt {attempt} of 3</p>
       </div>
     );
   }

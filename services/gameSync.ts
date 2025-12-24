@@ -10,6 +10,17 @@ let currentPlayerId = '';
 
 const PEER_PREFIX = 'HARI-JEOPARDY-';
 
+const PEER_CONFIG = {
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+    ],
+    iceCandidatePoolSize: 10,
+  }
+};
+
 export const generateRoomCode = () => {
   const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ';
   return Array.from({ length: 4 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
@@ -18,7 +29,11 @@ export const generateRoomCode = () => {
 /**
  * HOST LOGIC
  */
-export const initHost = (roomCode: string, onMessage: (msg: SyncMessage) => void): Promise<string> => {
+export const initHost = (
+  roomCode: string,
+  onMessage: (msg: SyncMessage, senderPeerId: string) => void,
+  onDisconnect?: (peerId: string) => void
+): Promise<string> => {
   return new Promise((resolve, reject) => {
     // If we already have a peer input for this room, we might be re-initializing.
     if (peer && !peer.destroyed) {
@@ -28,7 +43,7 @@ export const initHost = (roomCode: string, onMessage: (msg: SyncMessage) => void
     currentRoomCode = roomCode;
     // Allow a small delay for destruction
     setTimeout(() => {
-      peer = new Peer(`${PEER_PREFIX}${roomCode}`);
+      peer = new Peer(`${PEER_PREFIX}${roomCode}`, PEER_CONFIG);
 
       peer.on('open', (id) => {
         console.log('Host Peer opened with ID:', id);
@@ -40,11 +55,19 @@ export const initHost = (roomCode: string, onMessage: (msg: SyncMessage) => void
         connections.push(conn);
 
         conn.on('data', (data: any) => {
-          onMessage(data as SyncMessage);
+          onMessage(data as SyncMessage, conn.peer);
         });
 
         conn.on('close', () => {
+          console.log('Connection closed:', conn.peer);
           connections = connections.filter(c => c !== conn);
+          if (onDisconnect) onDisconnect(conn.peer);
+        });
+
+        conn.on('error', (err) => {
+          console.error('Connection error for peer:', conn.peer, err);
+          connections = connections.filter(c => c !== conn);
+          if (onDisconnect) onDisconnect(conn.peer);
         });
       });
 
@@ -78,61 +101,117 @@ export const broadcastState = (state: GameState) => {
   });
 };
 
+export const sendToPeer = (peerId: string, msg: SyncMessage) => {
+  const conn = connections.find(c => c.peer === peerId);
+  if (conn && conn.open) {
+    conn.send(msg);
+  }
+};
+
 /**
  * PLAYER LOGIC
  */
-export const initPlayer = (roomCode: string, playerName: string, onMessage: (msg: SyncMessage) => void): Promise<Player> => {
-  return new Promise((resolve, reject) => {
-    currentPlayerId = Math.random().toString(36).substring(7);
-    peer = new Peer(); // Players get a random ID
+export const initPlayer = (
+  roomCode: string,
+  playerName: string,
+  onMessage: (msg: SyncMessage) => void,
+  onAttempt?: (attempt: number) => void,
+  maxRetries = 3
+): Promise<Player> => {
+  let attempt = 0;
 
-    peer.on('open', (id) => {
-      console.log('Player Peer opened with ID:', id);
-      const conn = peer!.connect(`${PEER_PREFIX}${roomCode}`);
-      hostConnection = conn;
+  const attemptConnection = (): Promise<Player> => {
+    return new Promise((resolve, reject) => {
+      attempt++;
+      console.log(`Connection attempt ${attempt} for room ${roomCode}...`);
+      if (onAttempt) onAttempt(attempt);
 
-      conn.on('open', () => {
-        console.log('Connected to host');
-        const joinMsg: SyncMessage = {
-          type: 'PLAYER_JOIN',
-          payload: {
-            name: playerName,
+      if (peer && !peer.destroyed) {
+        peer.destroy();
+      }
+
+      currentPlayerId = Math.random().toString(36).substring(7);
+      peer = new Peer(PEER_CONFIG);
+
+      let connectionTimeout: any = null;
+
+      const cleanup = () => {
+        if (connectionTimeout) clearTimeout(connectionTimeout);
+      };
+
+      peer.on('open', () => {
+        console.log('Player Peer opened');
+        const conn = peer!.connect(`${PEER_PREFIX}${roomCode}`, {
+          reliable: true
+        });
+        hostConnection = conn;
+
+        connectionTimeout = setTimeout(() => {
+          console.warn('Connection handshake timeout');
+          conn.close();
+          peer?.destroy();
+          handleFailure(new Error('Handshake timeout'));
+        }, 8000); // 8 second timeout for handshake
+
+        conn.on('open', () => {
+          cleanup();
+          console.log('Connected to host');
+          const joinMsg: SyncMessage = {
+            type: 'PLAYER_JOIN',
+            payload: {
+              name: playerName,
+              id: currentPlayerId,
+              score: 0,
+              isBuzzed: false
+            },
+            senderId: currentPlayerId
+          };
+          conn.send(joinMsg);
+
+          resolve({
             id: currentPlayerId,
+            name: playerName,
             score: 0,
             isBuzzed: false
-          },
-          senderId: currentPlayerId
-        };
-        conn.send(joinMsg);
+          });
+        });
 
-        // Return the player object once connected
-        resolve({
-          id: currentPlayerId,
-          name: playerName,
-          score: 0,
-          isBuzzed: false
+        conn.on('data', (data: any) => {
+          onMessage(data as SyncMessage);
+        });
+
+        conn.on('error', (err) => {
+          cleanup();
+          console.error('Connection error:', err);
+          handleFailure(err);
+        });
+
+        conn.on('close', () => {
+          cleanup();
+          console.warn('Host connection closed');
         });
       });
 
-      conn.on('data', (data: any) => {
-        onMessage(data as SyncMessage);
+      peer.on('error', (err) => {
+        cleanup();
+        console.error('Peer error:', err);
+        handleFailure(err);
       });
 
-      conn.on('error', (err) => {
-        console.error('Connection error:', err);
-        reject(err);
-      });
-
-      conn.on('close', () => {
-        console.warn('Host connection closed');
-      });
+      const handleFailure = (err: any) => {
+        if (attempt < maxRetries) {
+          console.log(`Attempt ${attempt} failed, retrying in 2s...`);
+          setTimeout(() => {
+            attemptConnection().then(resolve).catch(reject);
+          }, 2000);
+        } else {
+          reject(err);
+        }
+      };
     });
+  };
 
-    peer.on('error', (err) => {
-      console.error('Peer error:', err);
-      reject(err);
-    });
-  });
+  return attemptConnection();
 };
 
 export const sendAction = (type: SyncMessage['type'], payload: any) => {

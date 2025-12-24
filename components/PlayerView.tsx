@@ -12,6 +12,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({ roomCode, playerName }) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [localPlayerId, setLocalPlayerId] = useState<string>('');
   const [connecting, setConnecting] = useState(true);
+  const [attempt, setAttempt] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
   const handleMessage = useCallback((msg: SyncMessage) => {
@@ -24,11 +25,12 @@ const PlayerView: React.FC<PlayerViewProps> = ({ roomCode, playerName }) => {
     const setup = async () => {
       try {
         setConnecting(true);
-        const player = await initPlayer(roomCode, playerName, handleMessage);
+        setError(null);
+        const player = await initPlayer(roomCode, playerName, handleMessage, (a) => setAttempt(a));
         setLocalPlayerId(player.id);
       } catch (err) {
         console.error(err);
-        setError('Failed to connect to room. Make sure the host is active!');
+        setError('Failed to connect after multiple attempts. Is the host active and online?');
       } finally {
         setConnecting(false);
       }
@@ -88,6 +90,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({ roomCode, playerName }) => {
       <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6 text-center">
         <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p className="font-game text-xl">Connecting to room {roomCode}...</p>
+        <p className="text-slate-500 text-xs mt-2 uppercase tracking-widest font-bold">Attempt {attempt} of 3</p>
       </div>
     );
   }

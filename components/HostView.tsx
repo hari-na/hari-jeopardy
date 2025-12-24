@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { GameState, Question, Player, SyncMessage } from '../types';
-import { initHost, broadcastState, destroyPeer, generateRoomCode } from '../services/gameSync';
+import { initHost, broadcastState, destroyPeer, generateRoomCode, sendToPeer } from '../services/gameSync';
 import { generateJeopardyBoard } from '../services/geminiService';
 import { loadMedicalBoard } from '../services/staticGameService';
 import { audioService } from '../services/audioService';
@@ -18,6 +18,7 @@ const HostView: React.FC<HostViewProps> = ({ roomCode, theme }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [introPlayerIndex, setIntroPlayerIndex] = useState(-1);
+  const hostControllerPeerIdRef = useRef<string | null>(null);
   const gameStateRef = useRef<GameState | null>(null);
 
   // Sync ref with state so PeerJS callbacks can see the latest state
@@ -35,7 +36,7 @@ const HostView: React.FC<HostViewProps> = ({ roomCode, theme }) => {
     });
   }, []);
 
-  const handlePeerMessage = useCallback((msg: SyncMessage) => {
+  const handlePeerMessage = useCallback((msg: SyncMessage, senderPeerId: string) => {
     console.log('Host received message:', msg);
     const currentState = gameStateRef.current;
     if (!currentState) return;
@@ -44,7 +45,20 @@ const HostView: React.FC<HostViewProps> = ({ roomCode, theme }) => {
       case 'PLAYER_JOIN':
         const newPlayer: Player = msg.payload;
         // Don't add Host Controllers to the player list
-        if (newPlayer.name === 'HOST_CONTROLLER') return;
+        if (newPlayer.name === 'HOST_CONTROLLER') {
+          if (hostControllerPeerIdRef.current && hostControllerPeerIdRef.current !== senderPeerId) {
+            console.log('Rejecting additional host controller:', senderPeerId);
+            sendToPeer(senderPeerId, {
+              type: 'REJECTED',
+              payload: 'Another host controller is already connected.',
+              senderId: 'HOST'
+            });
+            return;
+          }
+          hostControllerPeerIdRef.current = senderPeerId;
+          updateAndBroadcast({ isHostControllerConnected: true });
+          return;
+        }
 
         if (!currentState.players.find(p => p.id === newPlayer.id)) {
           updateAndBroadcast({
@@ -273,7 +287,13 @@ const HostView: React.FC<HostViewProps> = ({ roomCode, theme }) => {
       };
 
       // Initialize PeerJS as Host
-      await initHost(roomCode, handlePeerMessage);
+      await initHost(roomCode, handlePeerMessage, (disconnectedPeerId) => {
+        if (disconnectedPeerId === hostControllerPeerIdRef.current) {
+          console.log('Host controller disconnected');
+          hostControllerPeerIdRef.current = null;
+          updateAndBroadcast({ isHostControllerConnected: false });
+        }
+      });
 
       setGameState(newState);
     } catch (err: any) {

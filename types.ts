@@ -42,10 +42,11 @@ export interface GameState {
   timer: number;
   buzzerLockUntil?: number;
   revealTimer?: number;
+  isHostControllerConnected?: boolean;
 }
 
 export interface SyncMessage {
-  type: 'UPDATE_STATE' | 'PLAYER_JOIN' | 'BUZZ' | 'SUBMIT_ANSWER' | 'NEXT_TURN' | 'HOST_ACTION' | 'BUZZ_LOCKED_ATTEMPT' | 'RELEASE_BUZZER';
+  type: 'UPDATE_STATE' | 'PLAYER_JOIN' | 'BUZZ' | 'SUBMIT_ANSWER' | 'NEXT_TURN' | 'HOST_ACTION' | 'BUZZ_LOCKED_ATTEMPT' | 'RELEASE_BUZZER' | 'REJECTED';
   payload: any;
   senderId: string;
 }
