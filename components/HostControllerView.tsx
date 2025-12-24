@@ -127,6 +127,16 @@ const HostControllerView: React.FC<HostControllerViewProps> = ({ roomCode }) => 
                     />
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">{p.id.slice(0, 4)}</span>
+                  <button
+                    onClick={() => {
+                      if (confirm(`Kick ${p.name}?`)) {
+                        sendAction('HOST_ACTION', { action: 'KICK_PLAYER', playerId: p.id });
+                      }
+                    }}
+                    className="ml-2 bg-red-900/20 hover:bg-red-900/40 border border-red-500/50 text-red-500 px-2 py-1 rounded text-[10px] font-bold uppercase transition-all"
+                  >
+                    KICK
+                  </button>
                 </div>
               ))}
             </div>

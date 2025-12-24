@@ -46,7 +46,7 @@ export interface GameState {
 }
 
 export interface SyncMessage {
-  type: 'UPDATE_STATE' | 'PLAYER_JOIN' | 'BUZZ' | 'SUBMIT_ANSWER' | 'NEXT_TURN' | 'HOST_ACTION' | 'BUZZ_LOCKED_ATTEMPT' | 'RELEASE_BUZZER' | 'REJECTED';
+  type: 'UPDATE_STATE' | 'PLAYER_JOIN' | 'BUZZ' | 'SUBMIT_ANSWER' | 'NEXT_TURN' | 'HOST_ACTION' | 'BUZZ_LOCKED_ATTEMPT' | 'RELEASE_BUZZER' | 'REJECTED' | 'KICKED';
   payload: any;
   senderId: string;
 }

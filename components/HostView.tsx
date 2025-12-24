@@ -94,7 +94,7 @@ const HostView: React.FC<HostViewProps> = ({ roomCode, theme }) => {
         // If player pressed buzzer while locked, reset their individual timer
         const updatedPlayersLock = currentState.players.map(p => {
           if (p.id === msg.senderId) {
-            const lockDuration = Math.floor(Math.random() * 2000) + 2000; // 2-4 seconds
+            const lockDuration = 2000; // Fixed 2 second penalty
             return { ...p, buzzerLockUntil: Date.now() + lockDuration };
           }
           return p;
@@ -205,6 +205,21 @@ const HostView: React.FC<HostViewProps> = ({ roomCode, theme }) => {
             p.id === playerId ? { ...p, score: newScore } : p
           );
           updateAndBroadcast({ players: updatedPlayers });
+        } else if (msg.payload.action === 'KICK_PLAYER') {
+          const playerToKickId = msg.payload.playerId;
+          console.log('Kicking player:', playerToKickId);
+
+          // 1. Send KICKED message to that peer
+          sendToPeer(playerToKickId, {
+            type: 'KICKED',
+            payload: 'You have been kicked by the host.',
+            senderId: 'HOST'
+          });
+
+          // 2. Remove from list
+          updateAndBroadcast({
+            players: currentState.players.filter(p => p.id !== playerToKickId)
+          });
         } else if (msg.payload.action === 'START_GAME') {
           startGame();
         } else if (msg.payload.action === 'SKIP') {
